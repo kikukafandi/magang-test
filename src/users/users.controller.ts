@@ -16,4 +16,15 @@ export class UsersController {
       statusCode: 200,
     }
   }
+
+  @Post('login')
+  async login(@Body() req: any) {
+    const result = await this.usersService.login(req);
+    return {
+      data: result,
+      success: true,
+      message: 'User logged in successfully',
+      statusCode: 200,
+    }
+  }
 }

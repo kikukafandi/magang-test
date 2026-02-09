@@ -5,13 +5,14 @@ import * as bcrypt from 'bcrypt';
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { UserValidation } from './user.validation';
-import th from 'zod/v4/locales/th.js';
+import { JwtService } from '@nestjs/jwt';
 @Injectable()
 export class UsersService {
     constructor(
         private prismaService: PrismaService,
         private validationService: ValidationService,
         @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+        private jwtService: JwtService,
     ) { }
 
     async register(req: any) {
@@ -47,6 +48,48 @@ export class UsersService {
             id: newUser.id,
             username: newUser.username,
             name: newUser.name,
+        };
+    }
+
+    async login(req: any) {
+        this.logger.info(`User login attempt with data: ${JSON.stringify(req.body)}`);
+        
+        // validate request body
+        const loginReq = this.validationService.validate(
+            UserValidation.LOGIN,
+            req
+        );
+
+        // find user by username
+        const user = await this.prismaService.user.findUnique({
+            where: { username: loginReq.username },
+        });
+        
+        if (!user) {
+            throw new HttpException('Invalid username or password', HttpStatus.UNAUTHORIZED);
+        }
+        const isPasswordValid = await bcrypt.compare(loginReq.password, user.password);
+        
+        if (!isPasswordValid) {
+            throw new HttpException('Invalid username or password', HttpStatus.UNAUTHORIZED);
+        }
+
+        const payload = {
+            username : user.username,
+            name : user.name,
+            sub : user.id,
+        };
+
+        const token = await this.jwtService.signAsync(payload);
+
+        await this.prismaService.user.update({
+            where: { id: user.id },
+            data: { token: token },
+        });
+        this.logger.info(`User logged in successfully with id: ${user.id}`);
+        
+        return {
+            access_token: token,
         };
     }
 }
