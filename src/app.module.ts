@@ -5,6 +5,7 @@ import { CommonModule } from './common/common.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
+import { NotesModule } from './notes/notes.module';
 import * as winston from 'winston';
 @Module({
   imports: [CommonModule, UsersModule, ConfigModule.forRoot({
@@ -14,7 +15,8 @@ import * as winston from 'winston';
     format:winston.format.json(),
     level: 'debug',
     transports: [new winston.transports.Console()],
-  })  
+  }),
+  NotesModule  
 ],
   controllers: [AppController],
   providers: [AppService],
