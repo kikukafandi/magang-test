@@ -1,13 +1,15 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { UsersService } from './users.service';
-import da from 'zod/v4/locales/da.js';
+import { ApiTags } from '@nestjs/swagger';
+import { LoginUserDto, RegisterUserDto } from './users.dto';
 
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post('register')
-  async register(@Body() req: any) {
+  async register(@Body() req: RegisterUserDto) {
     const result = await this.usersService.register(req);
     return {
       data: result,
@@ -18,7 +20,7 @@ export class UsersController {
   }
 
   @Post('login')
-  async login(@Body() req: any) {
+  async login(@Body() req: LoginUserDto) {
     const result = await this.usersService.login(req);
     return {
       data: result,
