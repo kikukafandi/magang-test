@@ -11,9 +11,9 @@ export class NotesService {
         private prismaService: PrismaService,
         private validationService: ValidationService,
         @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
-    ){}
+    ) { }
 
-    async createNote(user:any, req:any) {
+    async createNote(user: any, req: any) {
         this.logger.info(`Creating note for user ${user.userId} with data: ${JSON.stringify(req.body)}`);
 
         const createNoteReq = this.validationService.validate(
@@ -21,11 +21,24 @@ export class NotesService {
             req
         );
 
+        if (createNoteReq.categoryId) {
+            const category = await this.prismaService.category.findUnique({
+                where: { id: createNoteReq.categoryId, userId: user.userId }
+            });
+            if (!category) {
+                throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
+            }
+        }
+
         const newNote = await this.prismaService.note.create({
-            data:{
+            data: {
                 title: createNoteReq.title,
                 content: createNoteReq.content,
                 userId: user.userId,
+                categoryId: createNoteReq.categoryId,
+            },
+            include: {
+                category: true,
             }
         });
 
@@ -34,20 +47,23 @@ export class NotesService {
         return newNote;
     }
 
-    async getUserNotes(user:any) {
+    async getUserNotes(user: any) {
         this.logger.info(`Fetching notes for user ${user.userId}`);
 
         return this.prismaService.note.findMany({
-            where:{
+            where: {
                 userId: user.userId,
             },
-            orderBy:{
+            orderBy: {
                 createdAt: 'desc',
+            },
+            include: {
+                category: true,
             }
         });
     }
 
-    async updateNote(user:any, noteId:number, req:any) {
+    async updateNote(user: any, noteId: number, req: any) {
         this.logger.info(`Updating note ${noteId} for user ${user.userId} with data: ${JSON.stringify(req.body)}`);
 
         const updateNoteReq = this.validationService.validate(
@@ -57,10 +73,17 @@ export class NotesService {
 
         const existingNote = await this.checkNoteMustExist(noteId, user.userId);
 
-        if(!existingNote) {
-            throw new HttpException('Note not found or access denied',HttpStatus.NOT_FOUND);
+        if (!existingNote) {
+            throw new HttpException('Note not found or access denied', HttpStatus.NOT_FOUND);
         }
-        
+        if (updateNoteReq.categoryId) {
+            const category = await this.prismaService.category.findUnique({
+                where: { id: updateNoteReq.categoryId, userId: user.userId }
+            });
+            if (!category) {
+                throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
+            }
+        }
         const updatedNote = await this.checkNoteMustExist(noteId, user.userId);
 
         await this.prismaService.note.update({
@@ -75,17 +98,17 @@ export class NotesService {
         return updatedNote;
     }
 
-    async deleteNote(user:any, noteId:number) {
+    async deleteNote(user: any, noteId: number) {
         this.logger.info(`Deleting note ${noteId} for user ${user.userId}`);
-        
+
         const existingNote = await this.checkNoteMustExist(noteId, user.userId);
 
-        if(!existingNote) {
-            throw new HttpException('Note not found or access denied',HttpStatus.NOT_FOUND);
+        if (!existingNote) {
+            throw new HttpException('Note not found or access denied', HttpStatus.NOT_FOUND);
         }
 
         await this.prismaService.note.delete({
-            where:{
+            where: {
                 id: noteId,
             }
         });
@@ -95,15 +118,15 @@ export class NotesService {
         return { message: 'Note deleted successfully' };
     }
 
-    private checkNoteMustExist(noteId:number, userId:number) {
+    private checkNoteMustExist(noteId: number, userId: number) {
         const note = this.prismaService.note.findUnique({
-            where:{
+            where: {
                 id: noteId,
                 userId: userId,
             }
         });
-        if(!note) {
-            throw new HttpException('Note not found or access denied',HttpStatus.NOT_FOUND);
+        if (!note) {
+            throw new HttpException('Note not found or access denied', HttpStatus.NOT_FOUND);
         }
         return note;
     }

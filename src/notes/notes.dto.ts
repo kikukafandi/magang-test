@@ -4,14 +4,22 @@ export class CreateNoteDto {
     @ApiProperty({ example: 'Belajar NestJS', description: 'Judul catatan' })
     title: string;
 
-    @ApiProperty({ example: 'Hari ini belajar Swagger...', description: 'Isi catatan' })
+    @ApiProperty({ example: 'Isi catatan...', description: 'Isi catatan' })
     content: string;
+
+    
+    @ApiProperty({ example: 1, required: false, description: 'ID Kategori (Optional)' })
+    categoryId?: number;
 }
 
 export class UpdateNoteDto {
-    @ApiProperty({ example: 'Belajar NestJS (Revisi)', required: false })
+    @ApiProperty({ example: 'Judul Baru', required: false })
     title?: string;
 
-    @ApiProperty({ example: 'Konten diperbarui...', required: false })
+    @ApiProperty({ example: 'Konten Baru', required: false })
     content?: string;
+
+    
+    @ApiProperty({ example: 1, required: false, description: 'ID Kategori (Optional)' })
+    categoryId?: number;
 }
